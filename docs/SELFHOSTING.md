@@ -68,3 +68,42 @@ Special thanks @kk86bioinfo, @lyoshenka and everyone in the thread https://githu
 https://gist.github.com/lyoshenka/002b7fbd801d0fd21f2f
 https://github.com/inconshreveable/ngrok/issues/84
 
+# Misc clues
+
+## ngrok as a systemd service
+
+You can write this unit to /etc/systemd/system/ngrok.service :
+```
+[Unit]
+Description=ngrok server
+
+[Service]
+ExecStart=/full/path/to/ngrokd -domain=example.com
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Don't forget to `systemctl reload-daemon` before `systemctl start ngrok`.
+
+It is important not to use quotes in the arguments. You can use other arguments, for instance -httpsArg= to disable https.
+
+## Using an auth_token
+
+If you self host, you probably have a public server, but don't want everyone to be able to use your server to tunnel. You can set an auth_token, that has to be the same on the server and on the client.
+
+On the server, it must be set as an env variable `AUTH_TOKEN`. If you use the unit file above, add a line in the `[Service]` block : `Environment=AUTH_TOKEN=mysecrettoken`.
+
+On the client, it must be set either using ~/.ngrok with `auth_token: mysecrettoken` at the root of the yml, or in the command with `-authtoken mysecrettoken`.
+
+## Using a vhost
+
+If your public address is not the same as the one set in httpArg or httpsArg, you can use the env variable `VHOST`. For instance, you can use `-httpArg=:8000`, `VHOST=ngrok.example.com:80` and a proxy that redirects ngrok.example.com/\* requests to localhost:8000 (it must keep the Host header). The corresponding Apache vhost would be :
+```
+<VirtualHost *>
+        ServerAlias *.ngrok.example.com
+        ProxyPreserveHost On
+        ProxyPass / http://localhost:8000
+        ProxyPassReverse http://localhost:8000 /
+</VirtualHost>
+```
