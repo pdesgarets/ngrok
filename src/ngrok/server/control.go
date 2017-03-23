@@ -10,6 +10,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+	"os"
 )
 
 const (
@@ -100,6 +101,11 @@ func NewControl(ctlConn conn.Conn, authMsg *msg.Auth) {
 		failAuth(fmt.Errorf("Incompatible versions. Server %s, client %s. Download a new version at http://ngrok.com", version.MajorMinor(), authMsg.Version))
 		return
 	}
+
+	if authToken := os.Getenv("AUTH_TOKEN"); authToken != "" && authToken != authMsg.User {
+		failAuth(fmt.Errorf("Wrong authtoken"))
+		return
+	}	
 
 	// register the control
 	if replaced := controlRegistry.Add(c.id, c); replaced != nil {
